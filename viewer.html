@@ -1,0 +1,178 @@
+<html>
+    <head>
+        <script src="https://launchar.app/sdk/v1?key=PgCkcRz0dyNiU3cWrOBw3PIB7cFYnuu8&redirect=true"></script>
+
+        <script id="gbuffer-vert" type="x-shader/x-vertex">
+        in vec3 position;
+        in vec2 uv;
+
+        out vec2 vUv;
+        out vec3 rayDirection;
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelMatrix;
+        uniform vec3 cameraPosition;
+
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+            rayDirection = (modelMatrix * vec4(position, 1.0)).xyz - cameraPosition;
+        }
+        </script>
+
+        <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+        <script type="importmap">
+        {
+            "imports": 
+            {
+            "three": "./js/three.module.js"
+            }
+        }
+        </script>
+        <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no"
+        />
+        <style>
+        html,
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            background: #333333;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        #wrapper {
+            margin: auto;
+            text-align: center;
+        }
+
+        #container {
+            margin: auto;
+            display: inline-block;
+        }
+
+        #info {
+            text-align: center;
+            position: absolute;
+            bottom: 25px;
+            z-index: 10;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #VRButton,
+        #ARButton {
+            position: relative !important;
+            left: inherit !important;
+            bottom: 96px !important;
+            background-color: #333333 !important;
+            display: none;
+        }
+
+        #backButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: rgba(128, 128, 128, 0.5);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 25px;
+            cursor: pointer;
+        }
+
+        #backButton:hover {
+            background-color: rgba(128, 128, 128, 0.7);
+        }
+        </style>
+    </head>
+
+    <body>
+        <div id="overlayDom">
+          <button id="backButton" onclick="window.history.back()">Back</button>
+        </div>
+        <div id="wrapper">
+          <div id="container"></div>
+    
+          <div id="info" style="font-size: 20px">
+            <div id="fpsdisplay"></div>
+            <div id="sizedisplay"></div>
+          </div>
+        </div>
+      </body>
+    
+    <script type="module">
+
+    function onWindowResize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(width * framebufferScale, height * framebufferScale);
+        renderer.domElement.style.maxWidth = `${width}px`;
+        renderer.domElement.style.maxHeight = `${height}px`;
+
+        render();
+    }
+
+
+    function updateFPSCounter() {
+        let currentFrame = window.performance.now();
+        let milliseconds = currentFrame - gLastFrame;
+        let smoothMilliseconds = oldMilliseconds * 0.95 + milliseconds * 0.05;
+        let smoothFps = 1000 / smoothMilliseconds;
+        gLastFrame = currentFrame;
+        oldMilliseconds = smoothMilliseconds;
+        if (gLoadedPNGs != gTotalPNGs) {
+            document.getElementById("fpsdisplay").innerHTML =
+            "<br>  Loading PNGs... " +
+            gLoadedPNGs.toFixed(0) +
+            "/" +
+            gTotalPNGs.toFixed(0);
+        } else {
+            if (!loaded) {
+            loaded = true;
+
+            let ARButton = document.getElementById("ARButton");
+            if (ARButton) {
+                document.body.style.background = "transparent";
+                ARButton.style.display = "block";
+            }
+            let VRButton = document.getElementById("VRButton");
+            if (VRButton) {
+                VRButton.style.display = "block";
+            }
+            }
+            document.getElementById("fpsdisplay").innerHTML =
+            "FPS: " + smoothFps.toFixed(1);
+        }
+    }
+
+
+    function animate() {
+        renderer.setAnimationLoop(render);
+    }
+
+    function render() {
+        controls.update();
+
+        renderer.render(scene, camera);
+
+        if (!renderer.xr.isPresenting) {
+            updateFPSCounter();
+        }
+    }
+
+    </script>
+
+</html>
