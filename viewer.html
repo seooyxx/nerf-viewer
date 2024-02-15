@@ -112,6 +112,231 @@
     
     <script type="module">
 
+    import * as THREE from "three";
+
+    import WebGL from "./js/WebGL.js";
+
+    import { OBJLoader } from "./js/OBJLoader.js";
+    import { GLTFLoader } from "./js/GLTFLoader.js";
+    import { VRButton } from "./js/VRButton.js";
+    import { ARButton } from "./js/ARButton.js";
+    import { DataUtils } from "three";
+    import { mergeBufferGeometries } from "./js/BufferGeometryUtils.js";
+    import { OrbitControls } from "./js/OrbitControls.js";
+    import { DRACOLoader } from "./js/DRACOLoader.js";
+
+    var loaded = false;
+
+    /**
+     * Creates shader code for the view-dependence MLP.
+     *
+     * This populates the shader code in viewDependenceNetworkShaderFunctions with
+     * network weights and sizes as compile-time constants. The result is returned
+     * as a string.
+     *
+     * @param {!Object} scene_params
+     * @return {string}
+     */
+
+
+    /*
+    * GLSL shader code 
+    * Implement a view-dependent MLP for evaluating network-based rendering. 
+    * Define two input textures (tDiffuse0 and tDiffuse1) and the view direction (rayDirection) to produce the final pixel color.
+    * The network weights and biases are defined as compile-time constants and are populated dynamically through the createViewDependenceFunctions function.
+    * The neural network consists of three layers, each performing matrix multiplication with activation functions, specifically ReLU for intermediate layers and sigmoid for the output layer.
+    * The shader code is designed to be modified by replacing placeholders with actual network weights and biases for specific scene parameters.
+    */
+
+    const viewDependenceNetworkShaderFunctions = /* glsl */ `
+        precision mediump float;
+
+        layout(location = 0) out vec4 pc_FragColor;
+
+        in vec2 vUv;
+        in vec3 rayDirection;
+
+        uniform mediump sampler2D tDiffuse0;
+        uniform mediump sampler2D tDiffuse1;
+
+        mediump vec3 evaluateNetwork( mediump vec4 f0, mediump vec4 f1, mediump vec4 viewdir) {
+            mediump mat4 intermediate_one = mat4(
+                BIAS_LIST_ZERO
+            );
+            mat4 input_values = mat4(f0, f1, __J9__, vec4(0.0));
+
+            intermediate_one += input_values[0][0] * mat4(__W0_0__)
+                + input_values[0][1] * mat4(__W0_1__)
+                + input_values[0][2] * mat4(__W0_2__)
+                + input_values[0][3] * mat4(__W0_3__)
+                + input_values[1][0] * mat4(__W0_4__)
+                + input_values[1][1] * mat4(__W0_5__)
+                + input_values[1][2] * mat4(__W0_6__)
+                + input_values[1][3] * mat4(__W0_7__)
+                + input_values[2][0] * mat4(__W0_8__)
+                + input_values[2][1] * mat4(__W0_9__)
+                + input_values[2][2] * mat4(__W0_10__) /*ViewDir*/;
+            intermediate_one[0] = max(intermediate_one[0], 0.0);
+            intermediate_one[1] = max(intermediate_one[1], 0.0);
+            intermediate_one[2] = max(intermediate_one[2], 0.0);
+            intermediate_one[3] = max(intermediate_one[3], 0.0);
+
+            mediump mat4 intermediate_two = mat4(
+                BIAS_LIST_ONE
+            );
+            intermediate_two += intermediate_one[0][0] * mat4(__W1_0__)
+                + intermediate_one[0][1] * mat4(__W1_1__)
+                + intermediate_one[0][2] * mat4(__W1_2__)
+                + intermediate_one[0][3] * mat4(__W1_3__)
+                + intermediate_one[1][0] * mat4(__W1_4__)
+                + intermediate_one[1][1] * mat4(__W1_5__)
+                + intermediate_one[1][2] * mat4(__W1_6__)
+                + intermediate_one[1][3] * mat4(__W1_7__)
+                + intermediate_one[2][0] * mat4(__W1_8__)
+                + intermediate_one[2][1] * mat4(__W1_9__)
+                + intermediate_one[2][2] * mat4(__W1_10__)
+                + intermediate_one[2][3] * mat4(__W1_11__)
+                + intermediate_one[3][0] * mat4(__W1_12__)
+                + intermediate_one[3][1] * mat4(__W1_13__)
+                + intermediate_one[3][2] * mat4(__W1_14__)
+                + intermediate_one[3][3] * mat4(__W1_15__);
+            intermediate_two[0] = max(intermediate_two[0], 0.0);
+            intermediate_two[1] = max(intermediate_two[1], 0.0);
+            intermediate_two[2] = max(intermediate_two[2], 0.0);
+            intermediate_two[3] = max(intermediate_two[3], 0.0);
+
+            mediump vec3 result = vec3(
+                BIAS_LIST_TWO
+            );
+            result += intermediate_two[0][0] * vec3(__W2_0__)
+                    + intermediate_two[0][1] * vec3(__W2_1__)
+                    + intermediate_two[0][2] * vec3(__W2_2__)
+                    + intermediate_two[0][3] * vec3(__W2_3__)
+                    + intermediate_two[1][0] * vec3(__W2_4__)
+                    + intermediate_two[1][1] * vec3(__W2_5__)
+                    + intermediate_two[1][2] * vec3(__W2_6__)
+                    + intermediate_two[1][3] * vec3(__W2_7__)
+                    + intermediate_two[2][0] * vec3(__W2_8__)
+                    + intermediate_two[2][1] * vec3(__W2_9__)
+                    + intermediate_two[2][2] * vec3(__W2_10__)
+                    + intermediate_two[2][3] * vec3(__W2_11__)
+                    + intermediate_two[3][0] * vec3(__W2_12__)
+                    + intermediate_two[3][1] * vec3(__W2_13__)
+                    + intermediate_two[3][2] * vec3(__W2_14__)
+                    + intermediate_two[3][3] * vec3(__W2_15__);
+            result = 1.0 / (1.0 + exp(-result));
+            return result;
+          }
+
+
+        void main() {
+            vec4 diffuse1 = texture( tDiffuse0, vUv );
+            if(diffuse1.r == 0.0) discard;
+            vec4 diffuse0 = vec4( normalize(rayDirection), 0.0 );
+            vec4 diffuse2 = texture( tDiffuse1, vUv );
+
+            // deal with iphone
+            diffuse1.a = diffuse1.a*2.0-1.0;
+            diffuse2.a = diffuse2.a*2.0-1.0;
+
+            pc_FragColor.rgb = evaluateNetwork(diffuse1, diffuse2, diffuse0);
+            pc_FragColor.a = 1.0;
+        }
+    `;
+
+    function createViewDependenceFunctions(network_weights, j9) {
+      let width = network_weights["0_bias"].length;
+      let biasListZero = "";
+      for (let i = 0; i < width; i++) {
+        let bias = network_weights["0_bias"][i];
+        biasListZero += Number(bias).toFixed(7);
+        if (i + 1 < width) {
+          biasListZero += ", ";
+        }
+      }
+
+      width = network_weights["1_bias"].length;
+      let biasListOne = "";
+      for (let i = 0; i < width; i++) {
+        let bias = network_weights["1_bias"][i];
+        biasListOne += Number(bias).toFixed(7);
+        if (i + 1 < width) {
+          biasListOne += ", ";
+        }
+      }
+
+      width = network_weights["2_bias"].length;
+      let biasListTwo = "";
+      for (let i = 0; i < width; i++) {
+        let bias = network_weights["2_bias"][i];
+        biasListTwo += Number(bias).toFixed(7);
+        if (i + 1 < width) {
+          biasListTwo += ", ";
+        }
+      }
+      let channelsZero = network_weights["0_weights"].length;
+      let channelsOne = network_weights["0_bias"].length;
+      let channelsTwo = network_weights["1_bias"].length;
+      let channelsThree = network_weights["2_bias"].length;
+
+      let fragmentShaderSource = viewDependenceNetworkShaderFunctions.replace(
+        new RegExp("NUM_CHANNELS_ZERO", "g"),
+        channelsZero
+      );
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("NUM_CHANNELS_ONE", "g"),
+        channelsOne
+      );
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("NUM_CHANNELS_TWO", "g"),
+        channelsTwo
+      );
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("NUM_CHANNELS_THREE", "g"),
+        channelsThree
+      );
+
+      for (let i = 0; i < network_weights["0_weights"].length; i++) {
+        fragmentShaderSource = fragmentShaderSource.replace(
+          new RegExp(`__W0_${i}__`, "g"),
+          network_weights["0_weights"][i].join(", ")
+        );
+      }
+      for (let i = 0; i < network_weights["1_weights"].length; i++) {
+        fragmentShaderSource = fragmentShaderSource.replace(
+          new RegExp(`__W1_${i}__`, "g"),
+          network_weights["1_weights"][i].join(", ")
+        );
+      }
+      for (let i = 0; i < network_weights["2_weights"].length; i++) {
+        fragmentShaderSource = fragmentShaderSource.replace(
+          new RegExp(`__W2_${i}__`, "g"),
+          network_weights["2_weights"][i].join(", ")
+        );
+      }
+
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("BIAS_LIST_ZERO", "g"),
+        biasListZero
+      );
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("BIAS_LIST_ONE", "g"),
+        biasListOne
+      );
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("BIAS_LIST_TWO", "g"),
+        biasListTwo
+      );
+
+      fragmentShaderSource = fragmentShaderSource.replace(
+        new RegExp("__J9__", "g"),
+        j9
+      );
+
+      return fragmentShaderSource;
+    }
+
+
     function onWindowResize() {
         const width = window.innerWidth;
         const height = window.innerHeight;
