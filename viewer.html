@@ -70,7 +70,10 @@
         #ARButton {
             position: relative !important;
             left: inherit !important;
-            bottom: 96px !important;
+            bottom: 130px !important;
+            font-size: 30px !important;
+            padding : 20px 10px !important;
+            width: 400px !important;
             background-color: #333333 !important;
             display: none;
         }
@@ -116,7 +119,7 @@
 
     import { OBJLoader } from "./js/OBJLoader.js";
     import { GLTFLoader } from "./js/GLTFLoader.js";
-    import { FBXLoader } from './js/FBXLoader';
+    import { FBXLoader } from './js/FBXLoader.js';
     import { VRButton } from "./js/VRButton.js";
     import { ARButton } from "./js/ARButton.js";
     import { DataUtils } from "three";
@@ -625,6 +628,32 @@
           onWindowResize();
           animate();
         });
+
+        var loader_fbx = new FBXLoader();
+        loader_fbx.load('./data/avatar/model.fbx', function (object) {
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                }
+            });
+
+            object.scale.set(1.0, 1.0, 1.0); // 예시 크기 조정
+            object.position.set(0, 0, 0); // 예시 위치 조정
+            object.rotation.set(0, 0, 0); // 예시 회전 조정
+
+            scene.add(object);
+        }, undefined, function (error) {
+            console.error(error);
+        });
+
+    // Ambient Light 추가
+    var ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
+    scene.add(ambientLight);
+
+    // Directional Light 추가
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(0, 1, 0); // 위에서 아래로 조명
+    scene.add(directionalLight);
+
     }
 
 

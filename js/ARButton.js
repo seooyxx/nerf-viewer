@@ -15,8 +15,8 @@ class ARButton {
         svg.setAttribute("width", 38);
         svg.setAttribute("height", 38);
         svg.style.position = "absolute";
-        svg.style.right = "20px";
-        svg.style.top = "20px";
+        svg.style.right = "30px";
+        svg.style.top = "30px";
         svg.addEventListener("click", function () {
           currentSession.end();
         });
@@ -127,12 +127,12 @@ class ARButton {
     function stylizeElement(element) {
       element.style.position = "absolute";
       element.style.bottom = "20px";
-      element.style.padding = "12px 6px";
+      element.style.padding = "40px 20px";
       element.style.border = "1px solid #fff";
       element.style.borderRadius = "4px";
       element.style.background = "rgba(0,0,0,0.1)";
       element.style.color = "#fff";
-      element.style.font = "normal 13px sans-serif";
+      element.style.font = "normal 40px sans-serif";
       element.style.textAlign = "center";
       element.style.opacity = "0.5";
       element.style.outline = "none";
