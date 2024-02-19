@@ -2,8 +2,7 @@ FROM python:3.8-slim
 
 WORKDIR /app
 
-COPY ./js /app/
-COPY main.py /app/
+COPY . /app/
 
 RUN pip install fastapi uvicorn
 

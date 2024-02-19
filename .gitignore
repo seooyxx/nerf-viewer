@@ -1,7 +1,7 @@
 *.pyc
 __pycache__/
 __pycache__/main.cpython-310.pyc
-data/scene/*.json
+data/*_mlp.json
 demo_page
 deployment
 .env
