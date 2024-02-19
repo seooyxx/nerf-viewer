@@ -22,6 +22,11 @@ async def read_index():
 async def read_viewer():
     return FileResponse('viewer.html')
 
+@app.get("/test.html")
+async def read_viewer():
+    return FileResponse('test.html')
+
+
 @app.get("/data/{file_path:path}")
 async def read_data_file(file_path: str):
     file_location = os.path.join("data", file_path)
