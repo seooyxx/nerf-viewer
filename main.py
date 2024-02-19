@@ -1,14 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import uvicorn
 
 app = FastAPI()
 
-# 정적 파일 경로 설정을 현재 디렉터리로 수정
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 @app.get("/")
 async def read_index():
-    # 현재 디렉터리 내의 index.html로 경로 수정
     return FileResponse('index.html')
+
+@app.get("/viewer.html")
+async def read_viewer():
+    return FileResponse('viewer.html')
+
+@app.get("/data/{file_path:path}")
+async def read_data_file(file_path: str):
+    file_location = os.path.join("data", file_path)
+    if os.path.isfile(file_location):
+        return FileResponse(file_location)
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
