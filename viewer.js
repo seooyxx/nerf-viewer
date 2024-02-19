@@ -1,5 +1,5 @@
-const baseUrl = "http://http://34.81.142.201:8080//data/model_1/scene/";
-const avatarBaseUrl = "http://http://34.81.142.201:8080//data/model_1/avatar/";
+const baseUrl = "http://34.81.142.201:8080/data/model_1/scene/";
+const avatarBaseUrl = "http://34.81.142.201:8080/data/model_1/avatar/";
 
 async function loadSceneAndAvatar(sceneName, avatarName) {
     const sceneResponse = await fetch(`${baseUrl}${sceneName}/scene_1_mlp.json`);

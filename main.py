@@ -14,17 +14,21 @@ app.add_middleware(
     allow_headers=["*"], 
 )
 
+
+app.mount("/", StaticFiles(directory="."), name="static")
+
 @app.get("/")
 async def read_index():
     return FileResponse('index.html')
 
-@app.get("/viewer.html")
+@app.get("/viewer")
 async def read_viewer():
     return FileResponse('viewer.html')
 
 @app.get("/test.html")
-async def read_viewer():
-    return FileResponse('./test.html')
+async def read_test_page():
+    return FileResponse('test.html')
+
 
 
 @app.get("/data/{file_path:path}")
