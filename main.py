@@ -18,13 +18,13 @@ app.add_middleware(
 async def read_index():
     return FileResponse('index.html')
 
-@app.get("/viewer_html")
+@app.get("/viewer.html")
 async def read_viewer():
     return FileResponse('viewer.html')
 
-@app.get("/test_html")
+@app.get("/test.html")
 async def read_viewer():
-    return FileResponse('test.html')
+    return FileResponse('./test.html')
 
 
 @app.get("/data/{file_path:path}")
