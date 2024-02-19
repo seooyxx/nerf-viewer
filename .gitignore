@@ -1,5 +1,5 @@
 __pycache__
-data
+data/scene/*.json
 demo_page
 deployment
 .env
